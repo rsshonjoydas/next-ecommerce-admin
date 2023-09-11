@@ -9,14 +9,15 @@ datasource db {
 }
 
 model Store {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
   name            String
   userId          String
   billboards       Billboard[] @relation("StoreToBillboard")
-  categorys       Category[]  @relation("StoreToCategory")
-  sizes           Size[]      @relation("StoreToSize")
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  categorys       Category[]   @relation("StoreToCategory")
+  sizes           Size[]       @relation("StoreToSize")
+  colors          Color[]      @relation("StoreToColor")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 }
 
 model Billboard {
@@ -50,6 +51,18 @@ model Size{
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
   storeId         String      @db.ObjectId
   store           Store       @relation("StoreToSize", fields: [storeId], references: [id])
+  name            String
+  value           String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([storeId])
+}
+
+model Color{
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  storeId         String      @db.ObjectId
+  store           Store       @relation("StoreToColor", fields: [storeId], references: [id])
   name            String
   value           String
   createdAt       DateTime    @default(now())
