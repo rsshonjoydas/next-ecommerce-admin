@@ -126,7 +126,7 @@ export async function PATCH(
       name,
       price,
       categoryId,
-      images,
+      images: newImages,
       colorId,
       sizeId,
       isFeatured,
@@ -145,7 +145,7 @@ export async function PATCH(
       return new NextResponse('Name is required', { status: 400 });
     }
 
-    if (!images || !images.length) {
+    if (!newImages || !newImages.length) {
       return new NextResponse('Images are required', { status: 400 });
     }
 
@@ -194,11 +194,17 @@ export async function PATCH(
       return new NextResponse('Product not found', { status: 404 });
     }
 
-    // Delete the Cloudinary images
-    if (product.images && product.images.length > 0) {
-      const imageUrls = product.images.map((image) => image.url);
+    // Extract the URLs of the existing images
+    const existingImageUrls = product.images.map((image) => image.url);
 
-      for (const imageUrl of imageUrls) {
+    // Find URLs of images that are no longer used
+    const unusedImageUrls = existingImageUrls.filter(
+      (url) => !newImages.some((newImage: any) => newImage.url === url)
+    );
+
+    // Delete the Cloudinary images that are no longer used
+    await Promise.all(
+      unusedImageUrls.map(async (imageUrl) => {
         // Extract the public_id from the Cloudinary URL
         const matchResult = imageUrl.match(/\/v\d+\/([^/]+)\./);
         if (matchResult) {
@@ -207,8 +213,8 @@ export async function PATCH(
           // Delete the image from Cloudinary
           await cloudinary.uploader.destroy(publicId);
         }
-      }
-    }
+      })
+    );
 
     // Update the product with new data and images
     const updatedProduct = await prismadb.product.update({
@@ -222,8 +228,9 @@ export async function PATCH(
         colorId,
         sizeId,
         images: {
+          deleteMany: {},
           createMany: {
-            data: [...images.map((image: { url: string }) => image)],
+            data: [...newImages],
           },
         },
         isFeatured,
